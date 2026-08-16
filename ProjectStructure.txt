@@ -1,0 +1,33 @@
+Auditor_Smasher/
+│
+├── app.py                          # Main Streamlit application (evolved from app2.py)
+├── requirements.txt                # Project dependencies
+├── .env.example                    # Template for API keys (Companies House, Charity Commission)
+│
+├── core/                           # The heart of your analyzer
+│   ├── __init__.py
+│   ├── analyzer.py                 # Main analysis logic (moved from app.py)
+│   ├── data_loader.py              # Smart CSV/API data loading
+│   └── anomaly_detector.py         # Core detection engine
+│
+├── integrations/                   # For external data verification
+│   ├── __init__.py
+│   ├── companies_house.py          # API client for company lookups
+│   └── charity_commission.py       # API client for charity lookups
+│
+├── auditors/                       # Specialized audit modules (your "Smashers")
+│   ├── __init__.py
+│   ├── procurement_auditor.py      # Analyzes pricing, single-source contracts
+│   ├── supplier_network_auditor.py # Maps relationships between suppliers/councils
+│   └── financial_health_auditor.py # Analyzes deficits, reserves, pensions
+│
+├── data/                           # For stored datasets & caches
+│   ├── inputs/                     # Raw CSV uploads
+│   ├── outputs/                    # Generated reports and results
+│   └── cache/                      # Cached API responses (saves calls)
+│
+└── utils/                          # Helper functions
+    ├── __init__.py
+    ├── formatters.py               # Cleans names, formats currency
+    ├── matchers.py                 # Fuzzy name matching logic
+    └── visualizers.py              # Charts and network graphs
