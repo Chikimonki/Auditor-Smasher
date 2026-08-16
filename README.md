@@ -16,5 +16,8 @@ Procurement audit analysis tool for detecting anomalies in public spending data.
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
-License
+```
+
+## License
+
 MIT
