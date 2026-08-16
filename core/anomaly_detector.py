@@ -121,3 +121,68 @@ class AnomalyDetector:
                 df.loc[major_supplier_mask, 'anomaly_flags'] += "Major supplier (>5% total spend); "
         
         return df
+# === ML ENHANCEMENTS (added 2026) ===
+from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import StandardScaler
+import numpy as np
+
+class MLAnomalyDetector:
+    """Isolation Forest based anomaly detection for procurement data"""
+    
+    def __init__(self, contamination=0.05):
+        self.contamination = contamination
+        self.model = IsolationForest(
+            contamination=contamination,
+            random_state=42,
+            n_estimators=100,
+        )
+        self.scaler = StandardScaler()
+    
+    def detect(self, df):
+        """Detect anomalies using ML"""
+        # Prepare features
+        features = pd.DataFrame()
+        
+        if 'amount' in df.columns:
+            features['amount'] = pd.to_numeric(df['amount'], errors='coerce').fillna(0)
+            features['log_amount'] = np.log1p(features['amount'].abs())
+        
+        if 'supplier' in df.columns:
+            # Supplier frequency as feature
+            supplier_counts = df['supplier'].value_counts()
+            features['supplier_frequency'] = df['supplier'].map(supplier_counts)
+        
+        # Scale features
+        X = self.scaler.fit_transform(features.fillna(0))
+        
+        # Fit and predict
+        self.model.fit(X)
+        df['ml_anomaly_score'] = self.model.decision_function(X)
+        df['ml_is_anomaly'] = self.model.predict(X) == -1
+        
+        return df
+
+class CategoryAnomalyDetector:
+    """Compares costs within the same category to find overpayments"""
+    
+    def __init__(self, multiplier_threshold=1.5):
+        self.multiplier_threshold = multiplier_threshold
+    
+    def detect_category_overpayment(self, df):
+        """Flag suppliers charging more than peers in same category"""
+        df = df.copy()
+        
+        if 'department' not in df.columns or 'amount' not in df.columns:
+            return df
+        
+        df['amount'] = pd.to_numeric(df['amount'], errors='coerce').fillna(0).abs()
+        
+        # For each department, compute median cost
+        dept_medians = df.groupby('department')['amount'].median()
+        
+        # Flag if amount > threshold * median
+        df['category_median'] = df['department'].map(dept_medians)
+        df['overpayment_ratio'] = df['amount'] / df['category_median'].replace(0, 1)
+        df['category_overpayment'] = df['overpayment_ratio'] > self.multiplier_threshold
+        
+        return df
