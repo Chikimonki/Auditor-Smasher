@@ -148,3 +148,49 @@ No single method covers all audit scenarios. Together, they provide:
 - Immediate detection (streaming)
 
 This is the foundation for a procurement audit tool that doesn't just look at point-in-time data but understands the relationships and timing of corporate changes.
+
+---
+
+## Technical Notes
+
+### API Key: Same for REST and Streaming
+You do **not** need a new API key to use the Streaming API. The same Companies House API key works for both REST and Streaming endpoints:
+- REST: `api.company-information.service.gov.uk`
+- Streaming: `api-stream.company-information.service.gov.uk`
+
+No account changes required — just point your code at the streaming endpoint.
+
+### Bulk Data: One Way to Get It
+The CSV download from http://download.companieshouse.gov.uk/en_output.html is the **only** official method for bulk data. There is no:
+- Bulk API endpoint
+- Filtered download (e.g., "all construction companies")
+- Programmatic request for subsets
+
+You download the full ~470MB zip, unzip it, and load it into your own database. If you need filtered data, you filter locally after download.
+
+---
+
+## What's Missing: Gaps in Companies House Data Access
+
+These are features that would improve Auditor Smasher but are not currently available from Companies House.
+
+### GraphQL API
+**What it means:** The current REST API returns fixed data structures. If you want company info + officers + filings in one request, you make three separate calls. GraphQL lets you specify exactly which fields you want across multiple resources in a single query.
+
+**Impact on Auditor Smasher:** You could fetch a company, its directors, and its filing history in one request instead of three. This reduces API calls (less rate limit pressure) and simplifies code.
+
+**Workaround today:** Make multiple REST calls and merge the results in your code. Use bulk downloads where possible to avoid the API entirely.
+
+### Webhooks
+**What it means:** Currently you either poll the API repeatedly (wasteful) or use the Streaming API (gets everything, no filtering). Webhooks would let Companies House push specific events to a URL you define — e.g., "notify me when company X changes its directors."
+
+**Impact on Auditor Smasher:** You could monitor only the companies in your audit scope instead of processing the entire national stream. Less data to process, faster alerts.
+
+**Workaround today:** Use the Streaming API and filter events client-side. Build your own event queue and discard irrelevant events.
+
+### Bulk Data Filtering by Sector
+**What it means:** The bulk downloads contain all 5.1M UK companies. If you only need companies in a specific sector (e.g., NHS suppliers, construction), you must download everything and filter locally.
+
+**Impact on Auditor Smasher:** A filtered endpoint would reduce download size from 470MB to potentially a few MB for a specific sector. Faster setup, less storage.
+
+**Workaround today:** Download the full dataset, filter by SIC code (Standard Industrial Classification) in your database, and discard the rest.
